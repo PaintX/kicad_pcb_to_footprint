@@ -5,3 +5,10 @@ C:\_KIMO_\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_
 C:\_KIMO_\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.csproj.GenerateResource.Cache
 C:\_KIMO_\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.exe
 C:\_KIMO_\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.pdb
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\bin\Debug\kicad_pcb_to_footprint.exe
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\bin\Debug\kicad_pcb_to_footprint.pdb
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.Form1.resources
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.Properties.Resources.resources
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.csproj.GenerateResource.Cache
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.exe
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.pdb

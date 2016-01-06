@@ -1,0 +1,7 @@
+(module test (layer F.Cu) (tedit 0)
+(solder_mask_margin 0.1)
+(fp_line (start 139.7 88.5317) (end 139.7 121.5517)  (layer F.SilkS) (width 0.2032))
+(fp_line (start 139.7 121.5517) (end 157.48 121.5517)  (layer F.SilkS) (width 0.2032))
+(fp_line (start 157.48 121.5517) (end 157.48 88.5317)  (layer F.SilkS) (width 0.2032))
+(fp_line (start 157.48 88.5317) (end 139.7 88.5317)  (layer F.SilkS) (width 0.2032))
+)
