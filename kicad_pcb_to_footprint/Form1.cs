@@ -61,6 +61,7 @@ namespace kicad_pcb_to_footprint
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 textBox1.Text = openFileDialog1.FileName;
+                _RedrawFoorprint();
             }
         }
 
