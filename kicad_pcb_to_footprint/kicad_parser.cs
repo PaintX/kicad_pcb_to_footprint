@@ -12,6 +12,8 @@ namespace kicad_pcb_to_footprint
         double factor;
         PointF mousePosition;
         kicad_element kicad_elements = new kicad_element();
+        StreamWriter file;
+        int numPad = 0;
 
         public kicad_parser()
         {
@@ -89,6 +91,7 @@ namespace kicad_pcb_to_footprint
 
         public void Parse(String file)
         {
+            kicad_elements.createList();
             String[] lines = File.ReadAllLines(file);
             if (lines[0].StartsWith("(kicad_pcb"))
             {
@@ -96,54 +99,52 @@ namespace kicad_pcb_to_footprint
                 foreach (String l in lines)
                 {
                     String line = l.Trim();
+                    kicad_element.kicad_elements ke = new kicad_element.kicad_elements();
+
+                    ke.file_Line = line;
 
                     line = line.Replace("(", "");
                     line = line.Replace(")", "");
 
-                    kicad_element.kicad_elements ke = new kicad_element.kicad_elements();
-
                     line = line.Replace(".", ",");
                     String[] explo = line.Split(' ');
+                    ke.file_line_param = line.Split(' ');
 
                     if (explo[0].Equals("area"))
                     {
                         ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_AREA;
 
-                        ke.rect.start.x = double.Parse(explo[1]);
-                        ke.rect.start.y = double.Parse(explo[2]);
+                        ke.rect.start.x = kicad_elements.getValueAt(ke, 1);
+                        ke.rect.start.y = kicad_elements.getValueAt(ke, 2);
 
-                        ke.rect.end.x = double.Parse(explo[3]);
-                        ke.rect.end.y = double.Parse(explo[4]);
+                        ke.rect.end.x = kicad_elements.getValueAt(ke, 3);
+                        ke.rect.end.y = kicad_elements.getValueAt(ke, 4);
 
                         kicad_elements.add(ke);
                     }
 
                     if (explo[0].Equals("at"))
                     {
-
                         ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_POSITION;
 
-                        ke.pos.x = float.Parse(explo[1]);
-                        ke.pos.y = float.Parse(explo[2]);
-                        try
-                        {
-                            ke.angle = float.Parse(explo[3]);
-                        }
-                        catch
-                        {
-                            ke.angle = 0.0f;
-                        }
+                        ke.pos.x = kicad_elements.getValueAt(ke, 1);
+                        ke.pos.y = kicad_elements.getValueAt(ke, 2);
+                        ke.angle = kicad_elements.getValueAt(ke, 3);
+
                         kicad_elements.add(ke);
                     }
                     if (explo[0].Equals("fp_line"))
                     {
                         ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_LINE;
 
-                        ke.line.start.x = float.Parse(explo[2]);
-                        ke.line.start.y = float.Parse(explo[3]);
+                        int idxStart = kicad_elements.findIdx(ke, "start");
 
-                        ke.line.end.x = float.Parse(explo[5]);
-                        ke.line.end.y = float.Parse(explo[6]);
+                        ke.line.start.x = kicad_elements.getValueAt(ke,idxStart+1);
+                        ke.line.start.y = kicad_elements.getValueAt(ke, idxStart + 2);
+
+                        int idxEnd = kicad_elements.findIdx(ke, "end");
+                        ke.line.end.x = kicad_elements.getValueAt(ke, idxEnd + 1);
+                        ke.line.end.y = kicad_elements.getValueAt(ke, idxEnd + 2);
 
                         ke.color = _GetKicadColor(explo[8]);
 
@@ -154,11 +155,14 @@ namespace kicad_pcb_to_footprint
                     {
                         ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND;
 
-                        ke.line.start.x = float.Parse(explo[2]);
-                        ke.line.start.y = float.Parse(explo[3]);
+                        int idxStart = kicad_elements.findIdx(ke, "start");
 
-                        ke.line.end.x = float.Parse(explo[5]);
-                        ke.line.end.y = float.Parse(explo[6]);
+                        ke.line.start.x = kicad_elements.getValueAt(ke, idxStart + 1);
+                        ke.line.start.y = kicad_elements.getValueAt(ke, idxStart + 2);
+
+                        int idxEnd = kicad_elements.findIdx(ke, "end");
+                        ke.line.end.x = kicad_elements.getValueAt(ke, idxEnd + 1);
+                        ke.line.end.y = kicad_elements.getValueAt(ke, idxEnd + 2);
 
                         ke.color = _GetKicadColor(explo[10]);
 
@@ -189,7 +193,7 @@ namespace kicad_pcb_to_footprint
                             kicad_elements.add(ke);
 
                             //-- trou
-                            try
+                         /*   try
                             {
                                 ke.circle.r = float.Parse(explo[11]) / 2.0f;
                             }
@@ -198,7 +202,7 @@ namespace kicad_pcb_to_footprint
                                 ke.circle.r = float.Parse(explo[12]) / 2.0f;
                             }
                             ke.color = Color.White;
-                            kicad_elements.add(ke);
+                            kicad_elements.add(ke);*/
                         }
                         
 
@@ -218,7 +222,8 @@ namespace kicad_pcb_to_footprint
 
         S_OFFSET positionStart = new S_OFFSET();
         S_OFFSET offset = new S_OFFSET();
-        
+
+       
         public void setFactor(double f)
         {
             factor = f;
@@ -239,10 +244,13 @@ namespace kicad_pcb_to_footprint
         {
             draw(bmp, false);
         }
+
         public void draw(Bitmap bmp,Boolean inFile)
         {
+            numPad = 0;
             for (int i = 0; i < kicad_elements.count(); i++)
             {
+                Boolean write = false;
                 kicad_element.kicad_elements ke = kicad_elements.get(i);
 
                 switch (ke.type)
@@ -271,19 +279,34 @@ namespace kicad_pcb_to_footprint
                         PointF o = new PointF((float)offset.x, (float)offset.y);
                         p1 = _getNewCoord(p1, o, (float)offset.angle);
 
-
                         p1.X -= (float)positionStart.x;
                         p1.Y -= (float)positionStart.y;
 
-                        p1.X *= (float)factor;
-                        p1.Y *= (float)factor;
 
-                        p1.X += mousePosition.X;
-                        p1.Y += mousePosition.Y;
+                        if (inFile == false)
+                        {
+                            p1.X *= (float)factor;
+                            p1.Y *= (float)factor;
 
-                        SolidBrush myBrush = new SolidBrush(ke.color);
+                            p1.X += mousePosition.X;
+                            p1.Y += mousePosition.Y;
 
-                        _FillCircle(bmp, myBrush , p1.X, p1.Y, (float)(ke.circle.r * factor));
+                            SolidBrush myBrush = new SolidBrush(ke.color);
+
+                            _FillCircle(bmp, myBrush, p1.X, p1.Y, (float)(ke.circle.r * factor));
+                        }
+                        else
+                        {
+                            int idx = kicad_elements.findIdx(ke, "pad");
+                            kicad_elements.setStringAt(ke, idx + 1, numPad.ToString());
+
+                            idx = kicad_elements.findIdx(ke, "at");
+                            kicad_elements.setStringAt(ke, idx + 1, p1.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, p1.Y.ToString());
+
+                            numPad++;
+                            write = true;
+                        }
                         break;
                     }
                     case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND):
@@ -297,19 +320,44 @@ namespace kicad_pcb_to_footprint
                         p1.Y -= (float)positionStart.y;
                         p2.Y -= (float)positionStart.y;
 
-                        p1.X *= (float)factor;
-                        p1.Y *= (float)factor;
+                        if (inFile == false)
+                        {
+                            p1.X *= (float)factor;
+                            p1.Y *= (float)factor;
 
-                        p2.X *= (float)factor;
-                        p2.Y *= (float)factor;
+                            p2.X *= (float)factor;
+                            p2.Y *= (float)factor;
 
-                        p1.X += mousePosition.X;
-                        p2.X += mousePosition.X;
+                            p1.X += mousePosition.X;
+                            p2.X += mousePosition.X;
 
-                        p1.Y += mousePosition.Y;
-                        p2.Y += mousePosition.Y;
+                            p1.Y += mousePosition.Y;
+                            p2.Y += mousePosition.Y;
 
-                        _DrawLine(p1, p2, 0, ke.color, bmp);
+                            _DrawLine(p1, p2, 0, ke.color, bmp);
+                        }
+                        else
+                        {
+                            //-- gr_line transform to fp_line
+                            int idx = kicad_elements.findIdx(ke, "gr_line");
+                            kicad_elements.setStringAt(ke, idx, "fp_line");
+
+                            idx = kicad_elements.findIdx(ke, "start");
+                            kicad_elements.setStringAt(ke, idx + 1, p1.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, p1.Y.ToString());
+
+                            idx = kicad_elements.findIdx(ke, "end");
+                            kicad_elements.setStringAt(ke, idx + 1, p2.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, p2.Y.ToString());
+
+                            kicad_elements.setStringAt(ke, kicad_elements.findIdx(ke, "Edge,Cuts"), "F,SilkS");
+
+                            idx = kicad_elements.findIdx(ke, "angle");
+                            kicad_elements.setStringAt(ke, idx, "");
+                            kicad_elements.setStringAt(ke, idx + 1, "");
+
+                            write = true;
+                        }
                         break;
                     }
                     case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_LINE):
@@ -333,40 +381,89 @@ namespace kicad_pcb_to_footprint
                         p1.Y -= (float)positionStart.y;
                         p2.Y -= (float)positionStart.y;
 
-                        p1.X *= (float)factor;
-                        p1.Y *= (float)factor;
+                        if (inFile == false)
+                        {
+                            p1.X *= (float)factor;
+                            p1.Y *= (float)factor;
 
-                        p2.X *= (float)factor;
-                        p2.Y *= (float)factor;
+                            p2.X *= (float)factor;
+                            p2.Y *= (float)factor;
 
-                        p1.X += mousePosition.X;
-                        p2.X += mousePosition.X;
+                            p1.X += mousePosition.X;
+                            p2.X += mousePosition.X;
 
-                        p1.Y += mousePosition.Y;
-                        p2.Y += mousePosition.Y;
+                            p1.Y += mousePosition.Y;
+                            p2.Y += mousePosition.Y;
 
-                        _DrawLine(p1, p2, 0, ke.color, bmp);
+                            _DrawLine(p1, p2, 0, ke.color, bmp);
+                        }
+                        else
+                        {
+                            int idx = kicad_elements.findIdx(ke, "start");
+                            kicad_elements.setStringAt(ke, idx + 1, p1.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, p1.Y.ToString());
+
+                            idx = kicad_elements.findIdx(ke, "end");
+                            kicad_elements.setStringAt(ke, idx + 1, p2.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, p2.Y.ToString());
+
+                            write = true;
+                        }
                         break;
                     }
+                }
+
+                if (inFile == true && write == true)
+                {
+                    Boolean parenthese_ouvert = false;
+                    file.Write("(");
+                    foreach (String str in ke.file_line_param)
+                    {
+
+                        if (    str.Equals("start") ||
+                                str.Equals("end") ||
+                                str.Equals("layer") ||
+                                str.Equals("layers") ||
+                                str.Equals("at") ||
+                                str.Equals("size") ||
+                                str.Equals("drill") ||
+                                str.Equals("width")
+                            )
+                        {
+                            if ( parenthese_ouvert == true )
+                                file.Write(")");
+                            file.Write("(");
+
+                            parenthese_ouvert = true;
+                        }
+
+                        file.Write(str.Replace(",", ".") + " ");
+                    }
+
+                    if (parenthese_ouvert == true)
+                    {
+                        file.Write(")");
+                    }
+                    file.Write(")");
+                    file.WriteLine("");
                 }
             }
         }
 
         public void saveFootprint(String fileStr)
         {
-            String[] lines = File.ReadAllLines(fileStr);
-            StreamWriter file = new StreamWriter(fileStr + ".kicad_mod");
-            if (lines[0].StartsWith("(kicad_pcb"))
+            Parse(fileStr);
+            if (kicad_elements.count() > 0)
             {
+                file = new StreamWriter(fileStr + ".kicad_mod");
                 file.WriteLine("(module test (layer F.Cu) (tedit 0)");
-                file.WriteLine("(solder_mask_margin 0.1)");
 
-                
-              
+                draw(null, true);
+
                 file.WriteLine(")");
+                file.Close();
             }
-            file.Close();
-
+            
         }
     }
 }

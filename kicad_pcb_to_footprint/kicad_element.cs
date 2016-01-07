@@ -52,12 +52,16 @@ namespace kicad_pcb_to_footprint
 
         public struct kicad_elements
         {
+            public String file_Line;
+            public String[] file_line_param;
             public kicad_element.kicad_type_element type;
 
             public kicad_line line;
             public kicad_circle circle;
             public kicad_pos pos;
             public kicad_rectangle rect;
+
+            public List<String> layers;
 
             public double angle;
 
@@ -87,5 +91,38 @@ namespace kicad_pcb_to_footprint
             return parts.ElementAt(idx);
         }
 
+        public int findIdx(kicad_elements ke , String search)
+        {
+            int idx = -1;
+            for (int i = 0; i < ke.file_line_param.Count(); i++)
+            {
+                if (ke.file_line_param[i].Equals(search))
+                {
+                    idx = i;
+                }
+            }
+
+            return idx;
+        }
+
+        public double getValueAt(kicad_elements ke, int idx)
+        {
+            double val = 0.0;
+            try
+            {
+                val = double.Parse(ke.file_line_param[idx]);
+            }
+            catch
+            {
+                val = 0.0;
+            }
+            return val;
+        }
+
+
+        public void setStringAt(kicad_elements ke, int idx, String str)
+        {
+            ke.file_line_param[idx] = str;
+        }
     }
 }
