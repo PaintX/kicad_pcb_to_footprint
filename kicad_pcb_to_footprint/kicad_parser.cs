@@ -62,6 +62,14 @@ namespace kicad_pcb_to_footprint
 
         }
 
+        private void _FillRectangle(Bitmap bmp, Brush brush,
+                                      PointF[] p)
+        {
+            var g = Graphics.FromImage(bmp);
+            g.FillPolygon(brush, p);
+            //g.FillRectangle(brush, s.X, s.Y, e.X - s.X, e.Y - s.Y);
+        }
+
         private Color _GetKicadColor(String layer)
         {
             Color c = new Color();
@@ -117,8 +125,8 @@ namespace kicad_pcb_to_footprint
                         ke.rect.start.x = kicad_elements.getValueAt(ke, 1);
                         ke.rect.start.y = kicad_elements.getValueAt(ke, 2);
 
-                        ke.rect.end.x = kicad_elements.getValueAt(ke, 3);
-                        ke.rect.end.y = kicad_elements.getValueAt(ke, 4);
+                       // ke.rect.end.x = kicad_elements.getValueAt(ke, 3);
+                       // ke.rect.end.y = kicad_elements.getValueAt(ke, 4);
 
                         kicad_elements.add(ke);
                     }
@@ -173,7 +181,7 @@ namespace kicad_pcb_to_footprint
                     {
                         if ( explo[3].Equals("oval"))
                         {
-                            ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_OVAL;
+                            ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_PAD_OVAL;
 
                             ke.circle.x = float.Parse(explo[5]);
                             ke.circle.y = float.Parse(explo[6]);
@@ -204,9 +212,33 @@ namespace kicad_pcb_to_footprint
                             ke.color = Color.White;
                             kicad_elements.add(ke);*/
                         }
-                        
 
-                        
+                        if (explo[3].Equals("rect"))
+                        {
+                            ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_PAD_RECT;
+
+                            ke.rect.start.x = kicad_elements.getValueAt(ke, 5);
+                            ke.rect.start.y = kicad_elements.getValueAt(ke, 6);
+
+                            try
+                            {
+                                ke.angle = float.Parse(explo[7]);
+
+                                ke.rect.size.width = kicad_elements.getValueAt(ke, 9);
+                                ke.rect.size.height = kicad_elements.getValueAt(ke, 10);
+
+                                ke.color = _GetKicadColor(explo[14]);
+                            }
+                            catch
+                            {
+                                ke.rect.size.width = kicad_elements.getValueAt(ke, 8);
+                                ke.rect.size.height = kicad_elements.getValueAt(ke, 9);
+                                ke.color = _GetKicadColor(explo[13]);
+                            }
+                            
+
+                            kicad_elements.add(ke);
+                        }
                     }
                 }
             }
@@ -269,7 +301,54 @@ namespace kicad_pcb_to_footprint
                         offset.angle = ke.angle;
                         break;
                     }
-                    case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_OVAL):
+                    case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_PAD_RECT):
+                    {
+                        PointF[] p = new PointF[4];
+
+                        PointF center = new PointF((float)ke.rect.start.x, (float)ke.rect.start.y);
+
+                        p[0].X = center.X - ((float)ke.rect.size.width / 2.0f);
+                        p[0].Y = center.Y + ((float)ke.rect.size.height / 2.0f);
+
+                        p[1].X = center.X + ((float)ke.rect.size.width / 2.0f);
+                        p[1].Y = center.Y + ((float)ke.rect.size.height / 2.0f);
+
+                        p[2].X = center.X + ((float)ke.rect.size.width / 2.0f);
+                        p[2].Y = center.Y - ((float)ke.rect.size.height / 2.0f);
+
+                        p[3].X = center.X - ((float)ke.rect.size.width / 2.0f);
+                        p[3].Y = center.Y - ((float)ke.rect.size.height / 2.0f);
+
+                        PointF o = new PointF((float)center.X, (float)center.Y);
+                         p[0] = _getNewCoord(p[0], o, (float)(ke.angle + offset.angle));
+                         p[1] = _getNewCoord(p[1], o, (float)(ke.angle +offset.angle));
+                         p[2] = _getNewCoord(p[2], o, (float)(ke.angle + offset.angle));
+                         p[3] = _getNewCoord(p[3], o, (float)(ke.angle + offset.angle));
+                        for (int j = 0; j < 4; j++)
+                        {
+                            p[j].X -= (float)offset.x;
+                            p[j].Y -= (float)offset.y;
+                        }
+
+
+
+
+                         for (int j = 0; j < 4; j++)
+                         {
+                             p[j].X -= (float)positionStart.x;
+                             p[j].X *= (float)factor;
+                             p[j].X += mousePosition.X;
+
+                             p[j].Y -= (float)positionStart.y;
+                             p[j].Y *= (float)factor;
+                             p[j].Y += mousePosition.Y;
+                         }
+
+                        SolidBrush myBrush = new SolidBrush(ke.color);
+                        _FillRectangle(bmp, myBrush, p);
+                        break;
+                    }
+                    case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_PAD_OVAL):
                     {
                         PointF p1 = new PointF((float)ke.circle.x, (float)ke.circle.y);
 

@@ -15,7 +15,9 @@ namespace kicad_pcb_to_footprint
             KICAD_TYPE_ELEMENT_LINE,
             KICAD_TYPE_ELEMENT_GROUND,
             KICAD_TYPE_ELEMENT_PAD,
-            KICAD_TYPE_ELEMENT_OVAL,
+            KICAD_TYPE_ELEMENT_PAD_OVAL,
+            KICAD_TYPE_ELEMENT_PAD_RECT,
+            rect
         };
 
 
@@ -23,6 +25,12 @@ namespace kicad_pcb_to_footprint
         {
             public double x;
             public double y;
+        };
+
+        public struct size
+        {
+            public double width;
+            public double height;
         };
 
         public struct kicad_line
@@ -34,7 +42,7 @@ namespace kicad_pcb_to_footprint
         public struct kicad_rectangle
         {
             public coord start;
-            public coord end;
+            public size  size;
         };
 
         public struct kicad_circle
