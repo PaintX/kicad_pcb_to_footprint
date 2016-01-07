@@ -13,11 +13,18 @@ namespace kicad_pcb_to_footprint
             KICAD_TYPE_ELEMENT_AREA = 0,
             KICAD_TYPE_ELEMENT_POSITION,
             KICAD_TYPE_ELEMENT_LINE,
-            KICAD_TYPE_ELEMENT_GROUND,
+            KICAD_TYPE_ELEMENT_GROUND_LINE,
+            KICAD_TYPE_ELEMENT_GROUND_CIRCLE,
             KICAD_TYPE_ELEMENT_PAD,
             KICAD_TYPE_ELEMENT_PAD_OVAL,
             KICAD_TYPE_ELEMENT_PAD_RECT,
             rect
+        };
+
+        public enum kicad_layer_element
+        {
+            KICAD_LAYER_ELEMENT_TOP = 0,
+            KICAD_LAYER_ELEMENT_BOTTOM,
         };
 
 
@@ -50,6 +57,9 @@ namespace kicad_pcb_to_footprint
             public double x;
             public double y;
             public double r;
+
+            public double px;
+            public double py;
         };
 
         public struct kicad_pos
@@ -74,6 +84,8 @@ namespace kicad_pcb_to_footprint
             public double angle;
 
             public Color color;
+
+            public kicad_layer_element layer;
         };
 
         List<kicad_elements> parts;
@@ -131,6 +143,11 @@ namespace kicad_pcb_to_footprint
         public void setStringAt(kicad_elements ke, int idx, String str)
         {
             ke.file_line_param[idx] = str;
+        }
+
+        public String getStringAt(kicad_elements ke, int idx)
+        {
+            return ke.file_line_param[idx];
         }
     }
 }

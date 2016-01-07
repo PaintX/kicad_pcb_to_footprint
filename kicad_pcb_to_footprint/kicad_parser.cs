@@ -26,8 +26,8 @@ namespace kicad_pcb_to_footprint
         {
             PointF ptDepart = new PointF(p1.X, p1.Y);
 
-            double angleDegre = ang * -1;
-            double angleRadian = Math.PI * angleDegre / 180;
+            double angleDegre = ang;
+            double angleRadian = Math.PI * (angleDegre / 180);
             double sina = Math.Sin(angleRadian);
             double cosa = Math.Cos(angleRadian);
             double x1 = ((ptDepart.X - center.X) * cosa) - ((ptDepart.Y - center.Y) * sina) + center.X;
@@ -99,6 +99,7 @@ namespace kicad_pcb_to_footprint
 
         public void Parse(String file)
         {
+            kicad_element.kicad_layer_element layer = kicad_element.kicad_layer_element.KICAD_LAYER_ELEMENT_TOP;
             kicad_elements.createList();
             String[] lines = File.ReadAllLines(file);
             if (lines[0].StartsWith("(kicad_pcb"))
@@ -118,6 +119,20 @@ namespace kicad_pcb_to_footprint
                     String[] explo = line.Split(' ');
                     ke.file_line_param = line.Split(' ');
 
+                    ke.layer = layer;
+                    ke.color = _GetKicadColor("");
+
+                    if (explo[0].Equals("module"))
+                    {
+                        int idxStart = kicad_elements.findIdx(ke, "layer");
+
+                        String param = kicad_elements.getStringAt(ke,idxStart + 1);
+
+                        if (param.Equals("B,CU"))
+                            layer = kicad_element.kicad_layer_element.KICAD_LAYER_ELEMENT_BOTTOM;
+                        else if (param.Equals("F,CU"))
+                            layer = kicad_element.kicad_layer_element.KICAD_LAYER_ELEMENT_TOP;
+                    }
                     if (explo[0].Equals("area"))
                     {
                         ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_AREA;
@@ -125,8 +140,8 @@ namespace kicad_pcb_to_footprint
                         ke.rect.start.x = kicad_elements.getValueAt(ke, 1);
                         ke.rect.start.y = kicad_elements.getValueAt(ke, 2);
 
-                       // ke.rect.end.x = kicad_elements.getValueAt(ke, 3);
-                       // ke.rect.end.y = kicad_elements.getValueAt(ke, 4);
+                        ke.rect.size.width = kicad_elements.getValueAt(ke, 3) - ke.rect.start.x;
+                        ke.rect.size.height = kicad_elements.getValueAt(ke, 4) - ke.rect.start.y;
 
                         kicad_elements.add(ke);
                     }
@@ -159,9 +174,32 @@ namespace kicad_pcb_to_footprint
                         kicad_elements.add(ke);
                     }
 
+                    if (explo[0].Equals("gr_circle"))
+                    {
+                        ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND_CIRCLE;
+
+                        int idx = kicad_elements.findIdx(ke, "center");
+                        ke.circle.x = kicad_elements.getValueAt(ke, idx + 1);
+                        ke.circle.y = kicad_elements.getValueAt(ke, idx + 2);
+
+                        PointF end = new PointF();
+                        idx = kicad_elements.findIdx(ke, "end");
+                        end.X = (float)kicad_elements.getValueAt(ke, idx + 1);
+                        end.Y = (float)kicad_elements.getValueAt(ke, idx + 2);
+
+                        ke.circle.px = end.X;
+                        ke.circle.py = end.Y;
+
+                       //  (x - x0)2 + (y - y0)2 = r2
+                        double r2 = Math.Pow((end.X - ke.circle.x), 2.0) + Math.Pow((end.Y - ke.circle.y), 2.0);
+                        ke.circle.r = Math.Sqrt(r2);
+
+
+                        kicad_elements.add(ke);
+                    }
                     if (explo[0].Equals("gr_line"))
                     {
-                        ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND;
+                        ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND_LINE;
 
                         int idxStart = kicad_elements.findIdx(ke, "start");
 
@@ -179,7 +217,7 @@ namespace kicad_pcb_to_footprint
 
                     if (explo[0].Equals("pad"))
                     {
-                        if ( explo[3].Equals("oval"))
+                        if (explo[3].Equals("oval") || explo[3].Equals("circle"))
                         {
                             ke.type = kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_PAD_OVAL;
 
@@ -252,7 +290,7 @@ namespace kicad_pcb_to_footprint
             public double angle;
         };
 
-        S_OFFSET positionStart = new S_OFFSET();
+        kicad_element.kicad_rectangle area = new kicad_element.kicad_rectangle();
         S_OFFSET offset = new S_OFFSET();
 
        
@@ -289,9 +327,9 @@ namespace kicad_pcb_to_footprint
                 {
                     case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_AREA):
                     {
-                        positionStart.x = ke.rect.start.x;
-                        positionStart.y = ke.rect.start.y;
-                        positionStart.angle = ke.angle;
+                        area.start.x = ke.rect.start.x;
+                        area.start.y = ke.rect.start.y;
+
                         break;
                     }
                     case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_POSITION):
@@ -319,33 +357,60 @@ namespace kicad_pcb_to_footprint
                         p[3].X = center.X - ((float)ke.rect.size.width / 2.0f);
                         p[3].Y = center.Y - ((float)ke.rect.size.height / 2.0f);
 
-                        PointF o = new PointF((float)center.X, (float)center.Y);
-                         p[0] = _getNewCoord(p[0], o, (float)(ke.angle + offset.angle));
-                         p[1] = _getNewCoord(p[1], o, (float)(ke.angle +offset.angle));
-                         p[2] = _getNewCoord(p[2], o, (float)(ke.angle + offset.angle));
-                         p[3] = _getNewCoord(p[3], o, (float)(ke.angle + offset.angle));
-                        for (int j = 0; j < 4; j++)
-                        {
-                            p[j].X -= (float)offset.x;
-                            p[j].Y -= (float)offset.y;
+                        double mirror = 1.0f;
+                        if (ke.layer == kicad_element.kicad_layer_element.KICAD_LAYER_ELEMENT_TOP)
+                        { 
+                            mirror *= -1;
                         }
 
+                        for (int j = 0; j < 4; j++)
+                        {
+                            p[j].X -= (float)(offset.x* mirror);
+                            p[j].Y -= (float)(offset.y* mirror);
+                        }
+
+                        center.X += (float)offset.x;
+                        center.Y += (float)offset.y;
+
+                        PointF o = new PointF((float)offset.x, (float)offset.y);
+                        p[0] = _getNewCoord(p[0], o, (float)((offset.angle) * mirror));
+                        p[1] = _getNewCoord(p[1], o, (float)((offset.angle) * mirror));
+                        p[2] = _getNewCoord(p[2], o, (float)((offset.angle) * mirror));
+                        p[3] = _getNewCoord(p[3], o, (float)((offset.angle) * mirror));
 
 
+                        center.X -= (float)area.start.x;
+                        center.Y -= (float)area.start.y;
 
-                         for (int j = 0; j < 4; j++)
-                         {
-                             p[j].X -= (float)positionStart.x;
-                             p[j].X *= (float)factor;
-                             p[j].X += mousePosition.X;
 
-                             p[j].Y -= (float)positionStart.y;
-                             p[j].Y *= (float)factor;
-                             p[j].Y += mousePosition.Y;
-                         }
+                        if (inFile == false)
+                        {
+                            for (int j = 0; j < 4; j++)
+                            {
+                                p[j].X -= (float)(area.start.x);
+                                p[j].X *= (float)factor;
+                                p[j].X += mousePosition.X;
 
-                        SolidBrush myBrush = new SolidBrush(ke.color);
-                        _FillRectangle(bmp, myBrush, p);
+                                p[j].Y -= (float)(area.start.y);
+                                p[j].Y *= (float)factor;
+                                p[j].Y += mousePosition.Y;
+                            }
+
+                            SolidBrush myBrush = new SolidBrush(ke.color);
+                            _FillRectangle(bmp, myBrush, p);
+                        }
+                        else
+                        {
+                            int idx = kicad_elements.findIdx(ke, "pad");
+                            kicad_elements.setStringAt(ke, idx + 1, numPad.ToString());
+
+                            idx = kicad_elements.findIdx(ke, "at");
+                            kicad_elements.setStringAt(ke, idx + 1, center.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, center.Y.ToString());
+
+                            numPad++;
+                            write = true;
+                        }
                         break;
                     }
                     case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_PAD_OVAL):
@@ -354,12 +419,18 @@ namespace kicad_pcb_to_footprint
 
                         p1.X += (float)offset.x;
                         p1.Y += (float)offset.y;
-                
-                        PointF o = new PointF((float)offset.x, (float)offset.y);
-                        p1 = _getNewCoord(p1, o, (float)offset.angle);
 
-                        p1.X -= (float)positionStart.x;
-                        p1.Y -= (float)positionStart.y;
+                        double mirror = 1.0f;
+                        if (ke.layer == kicad_element.kicad_layer_element.KICAD_LAYER_ELEMENT_TOP)
+                        {
+                            mirror *= -1;
+                        }
+
+                        PointF o = new PointF((float)offset.x, (float)offset.y);
+                        p1 = _getNewCoord(p1, o, (float)(offset.angle * mirror));
+
+                        p1.X -= (float)area.start.x;
+                        p1.Y -= (float)area.start.y;
 
 
                         if (inFile == false)
@@ -388,16 +459,59 @@ namespace kicad_pcb_to_footprint
                         }
                         break;
                     }
-                    case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND):
+                    case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND_CIRCLE):
+                    {
+                        PointF p1 = new PointF((float)ke.circle.x, (float)ke.circle.y);
+                        PointF p2 = new PointF((float)ke.circle.px, (float)ke.circle.py);
+
+                        p1.X -= (float)area.start.x;
+                        p1.Y -= (float)area.start.y;
+
+                        p2.X -= (float)area.start.x;
+                        p2.Y -= (float)area.start.y;
+
+                        if (inFile == false)
+                        {
+                            p1.X *= (float)factor;
+                            p1.Y *= (float)factor;
+
+                            p1.X += mousePosition.X;
+                            p1.Y += mousePosition.Y;
+
+                            _DrawCircle(bmp, ke.color, p1.X, p1.Y, (float)(ke.circle.r * factor));
+                        }
+                        else 
+                        {
+                            int idx = kicad_elements.findIdx(ke, "gr_circle");
+                            kicad_elements.setStringAt(ke, idx, "fp_circle");
+
+                            idx = kicad_elements.findIdx(ke, "center");
+                            kicad_elements.setStringAt(ke, idx + 1, p1.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, p1.Y.ToString());
+
+                            idx = kicad_elements.findIdx(ke, "end");
+                            kicad_elements.setStringAt(ke, idx + 1, p2.X.ToString());
+                            kicad_elements.setStringAt(ke, idx + 2, p2.Y.ToString());
+
+                            idx = kicad_elements.findIdx(ke, "layer");
+
+                            if (!kicad_elements.getStringAt(ke, idx + 1).Equals("Margin"))
+                                kicad_elements.setStringAt(ke, idx + 1, "F,SilkS");
+
+                            write = true;
+                        }
+                        break;
+                    }
+                    case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_GROUND_LINE):
                     {
                         PointF p1 = new PointF((float)ke.line.start.x, (float)ke.line.start.y);
                         PointF p2 = new PointF((float)ke.line.end.x, (float)ke.line.end.y);
 
-                        p1.X -= (float)positionStart.x;
-                        p2.X -= (float)positionStart.x;
+                        p1.X -= (float)area.start.x;
+                        p2.X -= (float)area.start.x;
 
-                        p1.Y -= (float)positionStart.y;
-                        p2.Y -= (float)positionStart.y;
+                        p1.Y -= (float)area.start.y;
+                        p2.Y -= (float)area.start.y;
 
                         if (inFile == false)
                         {
@@ -406,7 +520,7 @@ namespace kicad_pcb_to_footprint
 
                             p2.X *= (float)factor;
                             p2.Y *= (float)factor;
-
+                            
                             p1.X += mousePosition.X;
                             p2.X += mousePosition.X;
 
@@ -429,7 +543,10 @@ namespace kicad_pcb_to_footprint
                             kicad_elements.setStringAt(ke, idx + 1, p2.X.ToString());
                             kicad_elements.setStringAt(ke, idx + 2, p2.Y.ToString());
 
-                            kicad_elements.setStringAt(ke, kicad_elements.findIdx(ke, "Edge,Cuts"), "F,SilkS");
+                            idx = kicad_elements.findIdx(ke, "layer");
+
+                            if ( !kicad_elements.getStringAt(ke, idx + 1).Equals("Margin") )
+                                kicad_elements.setStringAt(ke, idx + 1, "F,SilkS");
 
                             idx = kicad_elements.findIdx(ke, "angle");
                             kicad_elements.setStringAt(ke, idx, "");
@@ -445,20 +562,26 @@ namespace kicad_pcb_to_footprint
                         PointF p2 = new PointF((float)ke.line.end.x, (float)ke.line.end.y);
 
                         p1.X += (float)offset.x;
-                        p2.X += (float)offset.x;
-
                         p1.Y += (float)offset.y;
+
+                        p2.X += (float)offset.x;
                         p2.Y += (float)offset.y;
+                        
+                        double mirror = 1.0f;
+                        if (ke.layer == kicad_element.kicad_layer_element.KICAD_LAYER_ELEMENT_TOP)
+                        {
+                            mirror *= -1;
+                        }
 
                         PointF o = new PointF((float)offset.x, (float)offset.y);
-                        p1 = _getNewCoord(p1, o, (float)offset.angle);
-                        p2 = _getNewCoord(p2, o, (float)offset.angle);
+                        p1 = _getNewCoord(p1, o, (float)(offset.angle * mirror));
+                        p2 = _getNewCoord(p2, o, (float)(offset.angle * mirror));
 
-                        p1.X -= (float)positionStart.x;
-                        p2.X -= (float)positionStart.x;
+                        p1.X -= (float)area.start.x;
+                        p2.X -= (float)area.start.x;
 
-                        p1.Y -= (float)positionStart.y;
-                        p2.Y -= (float)positionStart.y;
+                        p1.Y -= (float)area.start.y;
+                        p2.Y -= (float)area.start.y;
 
                         if (inFile == false)
                         {
@@ -506,6 +629,7 @@ namespace kicad_pcb_to_footprint
                                 str.Equals("at") ||
                                 str.Equals("size") ||
                                 str.Equals("drill") ||
+                                str.Equals("center") ||
                                 str.Equals("width")
                             )
                         {

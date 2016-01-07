@@ -84,7 +84,7 @@ namespace kicad_pcb_to_footprint
             if (isDown == true)
             {
                 image1 = new Bitmap(pictureBox1.Width, pictureBox1.Height);
-                PointF p = new PointF((e.X - pictureBox1.Location.X),(e.Y - pictureBox1.Location.Y));
+                PointF p = new PointF(e.X,e.Y);
                 kicad.setMousePosition(p);
                 _RedrawFoorprint();
                 isMoved = true;
