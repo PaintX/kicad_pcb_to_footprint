@@ -16,7 +16,7 @@ namespace kicad_pcb_to_footprint
 
         public void _RedrawFoorprint()
         {
-            if (image1 != null)
+            if ((image1 != null) && (kicad != null ))
             {
                 kicad.draw(image1);
                 pictureBox1.Image = image1;
@@ -66,11 +66,13 @@ namespace kicad_pcb_to_footprint
                 image1 = new Bitmap(pictureBox1.Width, pictureBox1.Height);
                 if (e.Button == System.Windows.Forms.MouseButtons.Left)
                 {
-                    kicad.setFactor(kicad.getFactor() + 1.0);
+                    if ( kicad != null )
+                        kicad.setFactor(kicad.getFactor() + 1.0);
                 }
                 if (e.Button == System.Windows.Forms.MouseButtons.Right)
                 {
-                    kicad.setFactor(kicad.getFactor() - 1.0);
+                    if (kicad != null)
+                        kicad.setFactor(kicad.getFactor() - 1.0);
                 }
 
                 _RedrawFoorprint();
@@ -84,7 +86,7 @@ namespace kicad_pcb_to_footprint
             if (isDown == true)
             {
                 image1 = new Bitmap(pictureBox1.Width, pictureBox1.Height);
-                PointF p = new PointF(e.X,e.Y);
+                PointF p = new PointF(e.X - pictureBox1.Width / 2, e.Y - pictureBox1.Height/2);
                 kicad.setMousePosition(p);
                 _RedrawFoorprint();
                 isMoved = true;
@@ -99,10 +101,20 @@ namespace kicad_pcb_to_footprint
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            kicad.saveFootprint(textBox1.Text);
+            if (textBox1.Text.Length > 0)
+            {
+                kicad.saveFootprint(textBox1.Text);
+            }
+            /*if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                //textBox1.Text = openFileDialog1.FileName;
+
+                if (saveFileDialog1.FileName.Length > 0)
+                {
+                    kicad.saveFootprint(saveFileDialog1.FileName);
+                    //kicad.Parse(textBox1.Text);
+                }
+            } */ 
         }
-
-
-
     }
 }

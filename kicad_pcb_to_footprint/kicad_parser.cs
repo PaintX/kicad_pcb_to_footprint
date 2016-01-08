@@ -334,6 +334,8 @@ namespace kicad_pcb_to_footprint
                         area.start.x = ke.rect.start.x;
                         area.start.y = ke.rect.start.y;
 
+                        area.size.width = ke.rect.size.width;
+                        area.size.height = ke.rect.size.height;
                         break;
                     }
                     case (kicad_element.kicad_type_element.KICAD_TYPE_ELEMENT_POSITION):
@@ -382,10 +384,11 @@ namespace kicad_pcb_to_footprint
                         p[2] = _getNewCoord(p[2], o, (float)((offset.angle) * mirror));
                         p[3] = _getNewCoord(p[3], o, (float)((offset.angle) * mirror));
 
+                        o = new PointF((float)offset.x, (float)offset.y);
+                        center = _getNewCoord(center, o, (float)((offset.angle) * mirror));
 
                         center.X -= (float)area.start.x;
                         center.Y -= (float)area.start.y;
-
 
                         if (inFile == false)
                         {
@@ -680,18 +683,21 @@ namespace kicad_pcb_to_footprint
 
         public void saveFootprint(String fileStr)
         {
+            String filename = Path.GetFileNameWithoutExtension(fileStr);
+            String dir = Path.GetDirectoryName(fileStr);
             Parse(fileStr);
             if (kicad_elements.count() > 0)
             {
-                file = new StreamWriter(fileStr + ".kicad_mod");
-                file.WriteLine("(module test (layer F.Cu) (tedit 0)");
+                file = new StreamWriter(dir + "\\" + filename + ".kicad_mod");
 
+                file.WriteLine("(module " + filename + " (layer F.Cu) (tedit 0)");
                 draw(null, true);
-
+                file.WriteLine("(fp_text reference  " + filename + "  (at 0"/* + (area.size.width / 2.0f).ToString().Replace(",", ".")*/ + " -" + ((area.size.height / 2.0f)+1).ToString().Replace(",", ".") + ") (layer F.SilkS)");
+                file.WriteLine("(effects (font (size 1 1) (thickness 0.10)))");
+                file.WriteLine(")");
                 file.WriteLine(")");
                 file.Close();
             }
-            
         }
     }
 }
