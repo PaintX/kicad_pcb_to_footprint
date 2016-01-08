@@ -13,3 +13,4 @@ C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\ob
 C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.exe
 C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.pdb
 C:\_KIMO_\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.csprojResolveAssemblyReference.cache
+C:\Users\aurmy\Documents\GitHub\kicad_pcb_to_footprint\kicad_pcb_to_footprint\obj\x86\Debug\kicad_pcb_to_footprint.csprojResolveAssemblyReference.cache

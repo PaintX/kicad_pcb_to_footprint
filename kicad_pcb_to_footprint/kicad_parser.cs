@@ -99,6 +99,7 @@ namespace kicad_pcb_to_footprint
 
         public void Parse(String file)
         {
+            mousePosition = new PointF(0, 0);
             kicad_element.kicad_layer_element layer = kicad_element.kicad_layer_element.KICAD_LAYER_ELEMENT_TOP;
             kicad_elements.createList();
             String[] lines = File.ReadAllLines(file);
@@ -142,6 +143,9 @@ namespace kicad_pcb_to_footprint
 
                         ke.rect.size.width = kicad_elements.getValueAt(ke, 3) - ke.rect.start.x;
                         ke.rect.size.height = kicad_elements.getValueAt(ke, 4) - ke.rect.start.y;
+
+                        ke.rect.start.x += ke.rect.size.width / 2;
+                        ke.rect.start.y += ke.rect.size.height / 2;
 
                         kicad_elements.add(ke);
                     }
@@ -394,6 +398,9 @@ namespace kicad_pcb_to_footprint
                                 p[j].Y -= (float)(area.start.y);
                                 p[j].Y *= (float)factor;
                                 p[j].Y += mousePosition.Y;
+
+                                p[j].X += (float)bmp.Width / 2;
+                                p[j].Y += (float)bmp.Height / 2;
                             }
 
                             SolidBrush myBrush = new SolidBrush(ke.color);
@@ -438,6 +445,9 @@ namespace kicad_pcb_to_footprint
                             p1.X *= (float)factor;
                             p1.Y *= (float)factor;
 
+                            p1.X += (float)bmp.Width / 2;
+                            p1.Y += (float)bmp.Height / 2;
+
                             p1.X += mousePosition.X;
                             p1.Y += mousePosition.Y;
 
@@ -474,6 +484,9 @@ namespace kicad_pcb_to_footprint
                         {
                             p1.X *= (float)factor;
                             p1.Y *= (float)factor;
+
+                            p1.X += (float)bmp.Width / 2;
+                            p1.Y += (float)bmp.Height / 2;
 
                             p1.X += mousePosition.X;
                             p1.Y += mousePosition.Y;
@@ -520,7 +533,13 @@ namespace kicad_pcb_to_footprint
 
                             p2.X *= (float)factor;
                             p2.Y *= (float)factor;
-                            
+
+                            p1.X += (float)bmp.Width / 2;
+                            p2.X += (float)bmp.Width / 2;
+
+                            p1.Y += (float)bmp.Height / 2;
+                            p2.Y += (float)bmp.Height / 2;
+
                             p1.X += mousePosition.X;
                             p2.X += mousePosition.X;
 
@@ -590,6 +609,12 @@ namespace kicad_pcb_to_footprint
 
                             p2.X *= (float)factor;
                             p2.Y *= (float)factor;
+
+                            p1.X += (float)bmp.Width/2;
+                            p2.X += (float)bmp.Width / 2;
+
+                            p1.Y += (float)bmp.Height / 2;
+                            p2.Y += (float)bmp.Height / 2;
 
                             p1.X += mousePosition.X;
                             p2.X += mousePosition.X;
